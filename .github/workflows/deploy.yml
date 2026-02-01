@@ -42,14 +42,48 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        # Get current task definition
-        TASK_DEF=$(aws ecs describe-task-definition --task-definition ecs-node-dev --query taskDefinition)
-        
-        # Update image URI
-        NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$ECR_REGISTRY/ecs-node:$IMAGE_TAG" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
-        
-        # Register new task definition
-        aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
+        # Check if task definition exists
+        if aws ecs describe-task-definition --task-definition ecs-node-dev >/dev/null 2>&1; then
+          # Update existing task definition
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition ecs-node-dev --query taskDefinition)
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$ECR_REGISTRY/ecs-node:$IMAGE_TAG" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
+        else
+          # Create initial task definition
+          cat > task-definition.json << EOF
+        {
+          "family": "ecs-node-dev",
+          "networkMode": "awsvpc",
+          "requiresCompatibilities": ["FARGATE"],
+          "cpu": "256",
+          "memory": "512",
+          "executionRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecs-task-execution-role",
+          "taskRoleArn": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecs-task-role",
+          "containerDefinitions": [
+            {
+              "name": "ecs-node",
+              "image": "$ECR_REGISTRY/ecs-node:$IMAGE_TAG",
+              "portMappings": [
+                {
+                  "containerPort": 3000,
+                  "protocol": "tcp"
+                }
+              ],
+              "essential": true,
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "/ecs/ecs-node-dev",
+                  "awslogs-region": "us-east-1",
+                  "awslogs-stream-prefix": "ecs"
+                }
+              }
+            }
+          ]
+        }
+        EOF
+          aws ecs register-task-definition --cli-input-json file://task-definition.json
+        fi
         
         # Update service
         aws ecs update-service --cluster ecs-node-cluster --service ecs-node-dev --task-definition ecs-node-dev
