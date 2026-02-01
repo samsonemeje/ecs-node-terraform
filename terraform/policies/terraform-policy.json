@@ -138,6 +138,8 @@
         "iam:CreatePolicy",
         "iam:DeletePolicy",
         "iam:GetPolicy",
+        "iam:ListPolicyVersions",
+        "iam:CreatePolicyVersion",
         "iam:AttachRolePolicy",
         "iam:DetachRolePolicy"
       ],
