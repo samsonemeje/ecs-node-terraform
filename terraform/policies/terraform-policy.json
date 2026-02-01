@@ -1,0 +1,144 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ECSServices",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:*",
+        "elasticloadbalancing:*",
+        "ecr:*",
+        "logs:*",
+        "application-autoscaling:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Networking",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpc",
+        "ec2:DeleteVpc",
+        "ec2:ModifyVpcAttribute",
+        "ec2:ModifySubnetAttribute",
+        "ec2:CreateRoute",
+        "ec2:DeleteRoute",
+        "ec2:Describe*",
+        "ec2:CreateSubnet",
+        "ec2:DeleteSubnet",
+        "ec2:CreateRouteTable",
+        "ec2:DeleteRouteTable",
+        "ec2:AssociateRouteTable",
+        "ec2:DisassociateRouteTable",
+        "ec2:CreateInternetGateway",
+        "ec2:AttachInternetGateway",
+        "ec2:DetachInternetGateway",
+        "ec2:DeleteInternetGateway",
+        "ec2:CreateNatGateway",
+        "ec2:DeleteNatGateway",
+        "ec2:AllocateAddress",
+        "ec2:ReleaseAddress",
+        "ec2:CreateSecurityGroup",
+        "ec2:DeleteSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupEgress",
+        "ec2:CreateTags",
+        "ec2:DeleteTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IAMForECSRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:ListInstanceProfilesForRole"
+      ],
+      "Resource": "arn:aws:iam::*:role/ecs-*"
+    },
+    {
+      "Sid": "PassRoleToECSTasksOnly",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::*:role/ecs-*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "ecs-tasks.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "IAMReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "iam:ListRoles",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformState",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::ecs-node-terraform-state*",
+        "arn:aws:s3:::ecs-node-terraform-state*/*"
+      ]
+    },
+    {
+      "Sid": "TerraformLocking",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Scan",
+        "dynamodb:DescribeTable"
+      ],
+      "Resource": "arn:aws:dynamodb:*:*:table/terraform-locks"
+    },
+    {
+      "Sid": "MonitoringAndAlerting",
+      "Effect": "Allow",
+      "Action": [
+        "sns:CreateTopic",
+        "sns:DeleteTopic",
+        "sns:GetTopicAttributes",
+        "sns:SetTopicAttributes",
+        "sns:ListTopics",
+        "sns:TagResource",
+        "sns:UntagResource",
+        "sns:ListTagsForResource",
+        "cloudwatch:PutDashboard",
+        "cloudwatch:DeleteDashboards",
+        "cloudwatch:GetDashboard",
+        "cloudwatch:ListDashboards",
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:ListTagsForResource",
+        "cloudwatch:TagResource",
+        "cloudwatch:UntagResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
