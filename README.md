@@ -241,7 +241,60 @@ terraform apply -var-file="environments/prod.tfvars"
 # Monitor and validate
 ```
 
-### Phase 3: Application Deployment
+### Phase 3: CI/CD Setup (OIDC Authentication)
+
+**⚠️ PREREQUISITE: Complete Phase 1 and Phase 2 first**
+
+#### Step 1: Update Terraform User Permissions
+```bash
+# Update terraform user policy to include OIDC permissions
+cd terraform/bootstrap
+export AWS_PROFILE=admin
+terraform apply
+```
+
+#### Step 2: Deploy OIDC Provider and GitHub Actions Role
+```bash
+cd ../iam
+
+# Configure GitHub repository (replace with your username/repo)
+echo 'github_repo = "yourusername/yourrepo"' > terraform.tfvars
+
+# Deploy OIDC resources
+export AWS_PROFILE=terraform
+terraform init
+terraform apply
+```
+
+#### Step 3: Configure GitHub Repository Secrets
+```bash
+# Get your AWS Account ID
+aws sts get-caller-identity --query Account --output text
+```
+
+**Add GitHub Repository Secret:**
+1. Go to your GitHub repository
+2. Settings → Secrets and variables → Actions
+3. Click "New repository secret"
+4. Name: `AWS_ACCOUNT_ID`
+5. Value: Your AWS Account ID from the command above
+
+#### Step 4: Test CI/CD Pipeline
+```bash
+# Push changes to trigger GitHub Actions
+git add .
+git commit -m "Setup OIDC CI/CD pipeline"
+git push origin main
+```
+
+**What this creates:**
+- GitHub OIDC provider in AWS
+- IAM role for GitHub Actions with minimal ECS deployment permissions
+- Secure CI/CD pipeline without long-lived AWS credentials
+
+### Phase 4: Application Deployment
+
+**Manual Deployment (Alternative to CI/CD):**
 
 ```bash
 cd app

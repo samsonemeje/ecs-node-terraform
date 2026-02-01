@@ -7,7 +7,6 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: ecs-node-app
 
 jobs:
   deploy:
@@ -35,8 +34,8 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
       run: |
         cd app
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker build --platform linux/amd64 -t $ECR_REGISTRY/ecs-node:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/ecs-node:$IMAGE_TAG
     
     - name: Update ECS service
       env:
@@ -44,13 +43,13 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
       run: |
         # Get current task definition
-        TASK_DEF=$(aws ecs describe-task-definition --task-definition ecs-node-app --query taskDefinition)
+        TASK_DEF=$(aws ecs describe-task-definition --task-definition ecs-node-dev --query taskDefinition)
         
         # Update image URI
-        NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+        NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "$ECR_REGISTRY/ecs-node:$IMAGE_TAG" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
         
         # Register new task definition
         aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
         
         # Update service
-        aws ecs update-service --cluster ecs-cluster --service ecs-node-app --task-definition ecs-node-app
+        aws ecs update-service --cluster ecs-node-cluster --service ecs-node-dev --task-definition ecs-node-dev
